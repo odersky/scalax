@@ -267,4 +267,55 @@ object FoldingViews {
       else f(s.head, s.tail.foldRightLzy(z)(f))
     }
   }
+
+  /** Tentative class to make views evaluate in parallel.
+   *  A parallel view is a normal view that has in addition `fold`
+   *  and `reduce` operations that might evaluate in parallel.
+   */
+  abstract class ParView[B] extends View[B] {
+
+    /** System-dependent operation which indicates whether
+     *  the computation of this view should be handled by more than one
+     *  thread
+     */
+    def shouldSplit: Boolean = ???
+
+    /** Split view into two halfs which can be treated in parallel */
+    def split: (ParView[B], ParView[B]) = ???
+
+    /** Perform to operations in parallel */
+    def inParallel[T, U](op1: T, op2: U): (T, U) = ???
+
+    /** Evaluate operation in parallel on this view.
+     *  @param  C       The type of the result
+     *  @param  z       The identity element of the operation
+     *  @param  leftOp  A version of the operation which combines a result with a view element
+     *  @param  assocOp A version of the operation which combines two results.
+     */
+    def fold[C](z: C)(leftOp: (C, B) => C)(assocOp: (C, C) => C): C =
+      if (shouldSplit) {
+        val (lv, rv) = split
+        val (l, r) = inParallel(
+          lv.fold(z)(leftOp)(assocOp),
+          rv.fold(z)(leftOp)(assocOp)
+        )
+        assocOp(l, r)
+      }
+      else foldLeft(z)(leftOp)
+
+    /** Evaluate binary operation on the view element type in parallel.
+     *  @param z      The identity element of the operation
+     *  @param op     The operation to apply
+     */
+    def reduce(z: B)(op: (B, B) => B): B = fold(z)(op)(op)
+
+    /** Evaluate in parallel, resulting in Vector */
+    def toVector: Vector[B] =
+      fold(Vector[B]())(_ :+ _)(_ ++ _)
+  }
+
+  /** A decorator for summable parallel collections */
+  implicit class Summable(val pv: ParView[Int]) extends AnyVal {
+    def sum = pv.reduce(0)(_ + _)
+  }
 }
