@@ -25,10 +25,8 @@ object FoldingViews {
     /** Extend lazy right fold by prefixing it with some operation */
     def right[R](r: FoldR[B, R]): FoldR[A, R]
 
-    /** Compose this fold transformer with another one, analogous
-     *  to function composition.
-     */
-    def andThen[C](that: FoldTransformer[B, C]): FoldTransformer[A, C] = new FoldTransformer[A, C] {
+    /** A class backing transformers created by `andThen` */
+    class CombinedTransformer[C](that: FoldTransformer[B, C]) extends FoldTransformer[A, C] {
       def left[R](r: FoldL[C, R]): FoldL[A, R] = self.left(that.left(r))
       def right[R](r: FoldR[C, R]): FoldR[A, R] = self.right(that.right(r))
 
@@ -40,11 +38,32 @@ object FoldingViews {
       }
     }
 
+    /** Compose this fold transformer with another one, analogous
+     *  to function composition.
+     */
+    def andThen[C](that: FoldTransformer[B, C]): FoldTransformer[A, C] =
+      if (canAbort || that.canAbort)
+        new CombinedTransformer[C](that) {
+          override def canAbort = true
+          override def done = self.done || that.done
+        }
+      else
+        new CombinedTransformer[C](that)
+
     /** Return a fresh copy of this fold transformer. The operation
      *  is different from the identity for fold-transformers that
      *  contain an operation that accesses some local mutable state.
      */
     def fresh: FoldTransformer[A, B] = this
+
+    /** Can one of the operations in this transformer abort prematurely, i.e. can it yield a result without
+     *  traversing the whole underlying collection?
+     */
+    def canAbort = false
+
+    /** Has one of the operations in this transformer completed?
+     */
+    def done = false
   }
 
   /** A fold transformer that contains a `count` field as local mutable state */
@@ -113,6 +132,8 @@ object FoldingViews {
           count += 1
           r(elem, acc)
         }
+    override def canAbort = true
+    override def done = count >= n
   }
 
   /** The fold transformer implementing a `drop` operation */
@@ -147,6 +168,8 @@ object FoldingViews {
         if (count >= 0) r(elem, acc)
         else acc
     }
+    override def canAbort = true
+    override def done = count < 0
   }
 
   /** The fold transformer implementing a `dropWhile` operation */
@@ -203,16 +226,30 @@ object FoldingViews {
       def transformer: FoldTransformer[A, C] = self.transformer andThen t
     }
 
+    private def combineLeft[R](xs: Seq[A], z: R, f: (R, A) => R, done: R => Boolean): R =
+      if (xs.isEmpty || done(z)) z
+      else combineLeft(xs.tail, f(z, xs.head), f, done)
+
+    private def combineRight[R](xs: Seq[A], z: R, f: (A, => R) => R): R =
+      if (xs.isEmpty) z
+      else f(xs.head, combineRight(xs.tail, z, f))
+
     /** The foldLeft operation over this view */
     def foldLeft[C](z: C)(f: (C, B) => C): C = {
       val trans = transformer.fresh
-      source.foldLeft(z)(trans.left(f))
+      combineLeft[C](source, z, trans.left(f), _ => trans.done)
+    }
+
+    /** The foldLeft operation over this view */
+    def foldLeft[C](z: C, done: C => Boolean)(f: (C, B) => C): C = {
+      val trans = transformer.fresh
+      combineLeft[C](source, z, trans.left(f), z => done(z) || trans.done)
     }
 
     /** The lazy fold right operation over this view */
     def foldRightLzy[C](z: => C)(f: (B, => C) => C): C = {
       val trans = transformer.fresh
-      source.foldRightLzy(z)(trans.right(f))
+      combineRight(source, z, trans.right(f))
     }
 
     /** View to view transformation */
@@ -239,13 +276,14 @@ object FoldingViews {
     /** Going from a view to something else */
 
     def indexOf(p: B => Boolean) =
-      zipWithIndex.foldRightLzy(-1) { (xn, acc) =>
+      zipWithIndex.foldLeft(-1, (_: Int) >= 0) { (acc, xn) =>
         val (x, n) = xn
         if (p(x)) n else acc
       }
 
     def find(p: B => Boolean) =
-      foldRightLzy(None: Option[B])((elem, alt) => if (p(elem)) Some(elem) else alt)
+      foldLeft(None: Option[B], (_: Option[B]).isDefined)(
+        (acc, elem) => if (p(elem)) Some(elem) else acc)
 
     def toList: List[B] = foldLeft(new ListBuffer[B])(_ += _).toList
 
@@ -261,14 +299,6 @@ object FoldingViews {
       type A = T
       val source = xs
       def transformer = new IdentityFT
-    }
-  }
-
-  /** A utility decorator that adds `foldRightLzy` to ordinary Scala sequences */
-  implicit class LazyRightFolding[A](val s: Seq[A]) extends AnyVal {
-    def foldRightLzy[B](z: => B)(f: (A, => B) => B): B = {
-      if (s.isEmpty) z
-      else f(s.head, s.tail.foldRightLzy(z)(f))
     }
   }
 
