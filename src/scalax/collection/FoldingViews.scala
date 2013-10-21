@@ -8,10 +8,10 @@ import scala.collection.mutable.ListBuffer
 object FoldingViews {
 
   /** The type of left folds */
-  type FoldL[A, R] = (R, A) => R
+  type FoldL[-A, R] = (R, A) => R
 
   /** The type of lazy right folds */
-  type FoldR[A, R] = (A, => R) => R
+  type FoldR[-A, R] = (A, => R) => R
 
   /** A `FoldTransformer` is a transform that
    *  adds a specific operation in front of both a left fold and
@@ -50,7 +50,11 @@ object FoldingViews {
   /** A fold transformer that contains a `count` field as local mutable state */
   abstract class CountingFoldTransformer[A, B] extends FoldTransformer[A, B] with Cloneable {
     var count = 0
-    override def fresh = clone.asInstanceOf[CountingFoldTransformer[A, B]]
+    override def fresh = {
+      val result = clone.asInstanceOf[CountingFoldTransformer[A, B]]
+      result.count = 0
+      result
+    }
   }
 
   /** The fold transformer implementing a `map` operation */
@@ -84,7 +88,7 @@ object FoldingViews {
   /** The identity fold transformer */
   class IdentityFT[A] extends FoldTransformer[A, A] {
     def left[R](r: FoldL[A, R]) = {(acc, elem) =>
-      //println(s"touching $elem")  // debug
+      println(s"touching $elem")  // debug
       r(acc, elem)
     }
     def right[R](r: FoldR[A, R]) = {(elem, acc) =>
