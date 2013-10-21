@@ -116,6 +116,27 @@ object FoldingViews {
     }
   }
 
+  class SliceFT[A](start: Int, end: Int) extends CountingFoldTransformer[A, A] {
+    def left[R](r: FoldL[A, R]): FoldL[A, R] =
+      (acc, elem) =>
+        if (count >= end) acc
+        else {
+          count += 1
+          if (count < start) acc
+          else r(acc, elem)
+        }
+    def right[R](r: FoldR[A, R]): FoldR[A, R] =
+      (elem, acc) =>
+        if (count >= end) acc
+        else {
+          count += 1
+          if (count < start) acc
+          else r(elem, acc)
+        }
+    override def canAbort = true
+    override def done = count >= end
+  }
+/*
   /** The fold transformer implementing a `take` operation */
   class TakeFT[A](n: Int) extends CountingFoldTransformer[A, A] {
     def left[R](r: FoldL[A, R]): FoldL[A, R] =
@@ -152,7 +173,7 @@ object FoldingViews {
           count += 1
           acc
         }
-  }
+  }*/
 
   /** The fold transformer implementing a `takeWhile` operation */
   class TakeWhileFT[A](p: A => Boolean) extends CountingFoldTransformer[A, A] {
@@ -260,9 +281,11 @@ object FoldingViews {
 
     def flatMap[C](f: B => View[C]) = andThen(new FlatMapFT(f))
 
-    def take(n: Int) = andThen(new TakeFT(n))
+    def slice(from: Int, end: Int) = andThen(new SliceFT(from, end))
 
-    def drop(n: Int) = andThen(new DropFT(n))
+    def take(n: Int) = slice(0, n)
+
+    def drop(n: Int) = slice(n, Int.MaxValue)
 
     def takeWhile(p: B => Boolean) = andThen(new TakeWhileFT(p))
 

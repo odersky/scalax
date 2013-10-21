@@ -20,7 +20,55 @@ object views {
                                                   //| r: scalax.collection.FoldingViews.IdentityFT[this.A]} = View(1, 2, 3, 4, 5, 
                                                   //| 6, 7, 8, 9, 10)
                            
-                        
+  val zs0 = vs0.zipWithIndex                      //> touching 1
+                                                  //| touching 2
+                                                  //| touching 3
+                                                  //| touching 4
+                                                  //| touching 5
+                                                  //| touching 6
+                                                  //| touching 7
+                                                  //| touching 8
+                                                  //| touching 9
+                                                  //| touching 10
+                                                  //| zs0  : scalax.collection.FoldingViews.View[(Int, Int)]{type A = scalax.colle
+                                                  //| ction.views.vs0.A} = View((1,0), (2,1), (3,2), (4,3), (5,4), (6,5), (7,6), (
+                                                  //| 8,7), (9,8), (10,9))
+                                                  
+  val zs1 = zs0  flatMap (x => View(x :: x :: Nil))
+                                                  //> touching 1
+                                                  //| touching (1,0)
+                                                  //| touching (1,0)
+                                                  //| touching 2
+                                                  //| touching (2,1)
+                                                  //| touching (2,1)
+                                                  //| touching 3
+                                                  //| touching (3,2)
+                                                  //| touching (3,2)
+                                                  //| touching 4
+                                                  //| touching (4,3)
+                                                  //| touching (4,3)
+                                                  //| touching 5
+                                                  //| touching (5,4)
+                                                  //| touching (5,4)
+                                                  //| touching 6
+                                                  //| touching (6,5)
+                                                  //| touching (6,5)
+                                                  //| touching 7
+                                                  //| touching (7,6)
+                                                  //| touching (7,6)
+                                                  //| touching 8
+                                                  //| touching (8,7)
+                                                  //| touching (8,7)
+                                                  //| touching 9
+                                                  //| touching (9,8)
+                                                  //| touching (9,8)
+                                                  //| touching 10
+                                                  //| touching (10,9)
+                                                  //| touching (10,9)
+                                                  //| zs1  : scalax.collection.FoldingViews.View[(Int, Int)]{type A = scalax.colle
+                                                  //| ction.views.zs0.A} = View((1,0), (1,0), (2,1), (2,1), (3,2), (3,2), (4,3), (
+                                                  //| 4,3), (5,4), (5,4), (6,5), (6,5), (7,6), (7,6), (8,7), (8,7), (9,8), (9,8), 
+                                                  //| (10,9), (10,9))
   val vs1 = vs0 map (_ + 1)                       //> touching 1
                                                   //| touching 2
                                                   //| touching 3
@@ -44,6 +92,7 @@ object views {
                                                   //| touching 9
                                                   //| touching 10
                                                   //| vs2  : scalax.collection.FoldingViews.View[Int] = View(2, 4, 6, 8, 10)
+ 
   
   val vs3 = vs2 flatMap (x => View(x :: x :: Nil))//> touching 1
                                                   //| touching 2
@@ -69,15 +118,19 @@ object views {
                                                   //| iews.vs2.A} = View(2, 2, 4, 4, 6, 6, 8, 8, 10, 10)
                       
                 
-  val vs4 = vs3 take 3                            //> touching 1
+  val vs4 = vs3 take 5                            //> touching 1
                                                   //| touching 2
                                                   //| touching 2
                                                   //| touching 2
                                                   //| touching 3
                                                   //| touching 4
                                                   //| touching 4
+                                                  //| touching 4
+                                                  //| touching 5
+                                                  //| touching 6
+                                                  //| touching 6
                                                   //| vs4  : scalax.collection.FoldingViews.View[Int]{type A = scalax.collection.v
-                                                  //| iews.vs3.A} = View(2, 2, 4)
+                                                  //| iews.vs3.A} = View(2, 2, 4, 4, 6)
                    
                    
                                                   
@@ -94,8 +147,45 @@ object views {
                                                   //| touching 2
                                                   //| touching 3
                                                   //| touching 4
+                                                  //| touching 1
+                                                  //| touching 2
+                                                  //| touching 3
+                                                  //| touching 4
+                                                  //| touching 5
+                                                  //| touching 6
+                                                  //| touching 1
+                                                  //| touching 2
+                                                  //| touching 3
+                                                  //| touching 4
+                                                  //| touching 5
+                                                  //| touching 6
                                                   //| vs5  : scalax.collection.FoldingViews.View[Int]{type A = scalax.collection.v
-                                                  //| iews.vs4.A} = View(1, 1, 1, 2, 3)
+                                                  //| iews.vs4.A} = View(1, 1, 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 5)
+                                                  
+  val vs5a = vs4 flatMap (x => View(x :: x :: Nil))
+                                                  //> touching 1
+                                                  //| touching 2
+                                                  //| touching 2
+                                                  //| touching 2
+                                                  //| touching 2
+                                                  //| touching 2
+                                                  //| touching 2
+                                                  //| touching 2
+                                                  //| touching 3
+                                                  //| touching 4
+                                                  //| touching 4
+                                                  //| touching 4
+                                                  //| touching 4
+                                                  //| touching 4
+                                                  //| touching 4
+                                                  //| touching 4
+                                                  //| touching 5
+                                                  //| touching 6
+                                                  //| touching 6
+                                                  //| touching 6
+                                                  //| touching 6
+                                                  //| vs5a  : scalax.collection.FoldingViews.View[Int]{type A = scalax.collection.
+                                                  //| views.vs4.A} = View(2, 2, 2, 2, 4, 4, 4, 4, 6, 6)
   val vs6 = vs3 drop 3                            //> touching 1
                                                   //| touching 2
                                                   //| touching 2
@@ -117,7 +207,7 @@ object views {
                                                   //| touching 10
                                                   //| touching 10
                                                   //| vs6  : scalax.collection.FoldingViews.View[Int]{type A = scalax.collection.v
-                                                  //| iews.vs3.A} = View(4, 6, 6, 8, 8, 10, 10)
+                                                  //| iews.vs3.A} = View(4, 4, 6, 6, 8, 8, 10, 10)
   
   val vs7 = vs6 map (x => x * x)                  //> touching 1
                                                   //| touching 2
@@ -139,8 +229,8 @@ object views {
                                                   //| touching 10
                                                   //| touching 10
                                                   //| touching 10
-                                                  //| vs7  : scalax.collection.FoldingViews.View[Int] = View(16, 36, 36, 64, 64, 1
-                                                  //| 00, 100)
+                                                  //| vs7  : scalax.collection.FoldingViews.View[Int] = View(16, 16, 36, 36, 64, 6
+                                                  //| 4, 100, 100)
   vs7 find (_ % 10 == 0)                          //> touching 1
                                                   //| touching 2
                                                   //| touching 2
