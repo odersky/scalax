@@ -136,44 +136,6 @@ object FoldingViews {
     override def canAbort = true
     override def done = count >= end
   }
-/*
-  /** The fold transformer implementing a `take` operation */
-  class TakeFT[A](n: Int) extends CountingFoldTransformer[A, A] {
-    def left[R](r: FoldL[A, R]): FoldL[A, R] =
-      (acc, elem) =>
-        if (count >= n) acc
-        else {
-          count += 1
-          r(acc, elem)
-        }
-    def right[R](r: FoldR[A, R]): FoldR[A, R] =
-      (elem, acc) =>
-        if (count >= n) acc
-        else {
-          count += 1
-          r(elem, acc)
-        }
-    override def canAbort = true
-    override def done = count >= n
-  }
-
-  /** The fold transformer implementing a `drop` operation */
-  class DropFT[A](n: Int) extends CountingFoldTransformer[A, A] {
-    def left[R](r: FoldL[A, R]): FoldL[A, R] =
-      (acc, elem) =>
-        if (count >= n) r(acc, elem)
-        else {
-          count += 1
-          acc
-        }
-    def right[R](r: FoldR[A, R]): FoldR[A, R] =
-      (elem, acc) =>
-        if (count >= n) r(elem, acc)
-        else {
-          count += 1
-          acc
-        }
-  }*/
 
   /** The fold transformer implementing a `takeWhile` operation */
   class TakeWhileFT[A](p: A => Boolean) extends CountingFoldTransformer[A, A] {
@@ -293,8 +255,7 @@ object FoldingViews {
 
     def zipWithIndex = andThen(new ZipWithIndexFT[B])
 
-    def partition(p: B => Boolean): (View[B], View[B]) =
-      (filter(p), filter(!p(_)))
+    def partition(p: B => Boolean): (View[B], View[B]) = (filter(p), filter(!p(_)))
 
     /** Going from a view to something else */
 
